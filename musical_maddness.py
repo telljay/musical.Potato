@@ -12,8 +12,6 @@ from flask import current_app
 from flask import abort
 app = Flask(__name__)
 #--
-import json
-#--
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id="e3d6ae52792d4f6bb286ef14c6ee270c",
 client_secret="6214d65c3e454af6aa92c0ab49d14915",
 redirect_uri="http://127.0.0.1:5000/",
@@ -30,8 +28,17 @@ def approve_login():
     
     return False
 #--
+@app.route("/search", methods= ["POST"])
+def basic_search():
+    jsonPostData = request.get_json()
+    searchCriteria = jsonPostData["searchBarResults"]
+    results = sp.search(q=searchCriteria, type='artist', limit=5)
+    # Print out the results
+    for artist in results['artists']['items']:
+        print(f"Artist Name: {artist['name']}, Popularity: {artist['popularity']}, Followers: {artist['followers']['total']}")
+    return  results
 def main():
-
+    basic_search()
     return 0
 #--
 main()
