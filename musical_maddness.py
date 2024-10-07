@@ -58,13 +58,16 @@ def rank_songs(artist):
         for album in artistAlbums:
             album_id = album['id']
             tracks = sp.album_tracks(album_id)['items']
+            average=0.0
             for track in tracks:
                 print(f"Current Song: {track['name']}")
-                ranking = input("Please rank this song 1-10: ")
+                ranking = int(input("Please rank this song 1-10: "))
                 if ranking > 10 or ranking < 1:
                     print("INVALID RANKING")
                     print(f"Current Song: {track['name']}")
-                    ranking = input("Please rank this song 1-10: ")
+                    ranking = int(input("Please rank this song 1-10: "))
+                average+=ranking
+            print(f"{average/len(tracks)}")
 
     except Error as e:
         print (f"Error opening database: {e}")
