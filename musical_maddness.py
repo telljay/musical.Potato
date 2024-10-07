@@ -61,12 +61,17 @@ def rank_songs(artist):
             average=0.0
             for track in tracks:
                 print(f"Current Song: {track['name']}")
-                ranking = int(input("Please rank this song 1-10: "))
-                if ranking > 10 or ranking < 1:
+                ranking = input("Please rank this song 1-10: ")
+                if ranking <= 10 or ranking >= 1:
+                    ranking = int(ranking)
+                    average+=ranking
+                else:
                     print("INVALID RANKING")
                     print(f"Current Song: {track['name']}")
-                    ranking = int(input("Please rank this song 1-10: "))
-                average+=ranking
+                    ranking = ("Please rank this song 1-10: ")
+                    ranking = int(ranking)
+                    average+=ranking
+
             print(f"{average/len(tracks)}")
 
     except Error as e:
