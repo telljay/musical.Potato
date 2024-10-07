@@ -51,7 +51,7 @@ def get_allAlbums(artist):
 def rank_songs(artist):
     try:
         entity = []
-        conn = sqlite3.connect("./musicalMaddnessDatabase")
+        conn = sqlite3.connect("./musicalMaddnessDatabase.db")
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         artistAlbums = get_allAlbums(artist)
@@ -78,6 +78,7 @@ def rank_songs(artist):
         print (f"Error opening database: {e}")
 #--
 def main():
-    rank_songs("Taylor Swift")
+    basic_search()
+    rank_songs("Alexander Bucaro")
 #--
 main()
