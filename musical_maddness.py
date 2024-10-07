@@ -37,8 +37,39 @@ def basic_search():
     for artist in results['artists']['items']:
         print(f"Artist Name: {artist['name']}, Popularity: {artist['popularity']}, Followers: {artist['followers']['total']}")
     return  results
+#--
+def get_allAlbums(artist):
+    artist_name = artist
+    result = sp.search(q='artist:' + artist_name, type='artist')
+    artist_id = result['artists']['items'][0]['id']
+
+    albums = sp.artist_albums(artist_id, album_type='album')
+    all_albums = albums['items']
+
+    return all_albums
+#--
+def rank_songs(artist):
+    try:
+        entity = []
+        conn = sqlite3.connect("./musicalMaddnessDatabase")
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        artistAlbums = get_allAlbums(artist)
+        for album in artistAlbums:
+            album_id = album['id']
+            tracks = sp.album_tracks(album_id)['items']
+            for track in tracks:
+                print(f"Current Song: {track['name']}")
+                ranking = input("Please rank this song 1-10: ")
+                if ranking > 10 or ranking < 1:
+                    print("INVALID RANKING")
+                    print(f"Current Song: {track['name']}")
+                    ranking = input("Please rank this song 1-10: ")
+
+    except Error as e:
+        print (f"Error opening database: {e}")
+#--
 def main():
-    basic_search()
-    return 0
+    rank_songs("Taylor Swift")
 #--
 main()
