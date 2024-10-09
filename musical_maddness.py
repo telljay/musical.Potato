@@ -33,9 +33,12 @@ def basic_search():
     jsonPostData = request.get_json()
     searchCriteria = jsonPostData["searchBarResults"]
     results = sp.search(q=searchCriteria, type='artist', limit=5)
-    # Print out the results
+    artistIDArray=[]
     for artist in results['artists']['items']:
         print(f"Artist Name: {artist['name']}, Popularity: {artist['popularity']}, Followers: {artist['followers']['total']}")
+
+    selectedArtist = int(input(f"select 1-5 to select the artist to rank"))
+
     return  results
 #--
 def get_allAlbums(artist):
@@ -55,14 +58,17 @@ def rank_songs(artist):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         artistAlbums = get_allAlbums(artist)
+        artistAlbums.reverse()
         for album in artistAlbums:
             album_id = album['id']
             tracks = sp.album_tracks(album_id)['items']
             average=0.0
+            #cursor.execute("""INSERT INTO Album (album_ID, title, releaseDate, artist_ID) VALUES (?,?,?,?)""", (album_id, album['name'], album['release_date'],album['artist']['id']))
             for track in tracks:
                 print(f"Current Song: {track['name']}")
                 ranking = input("Please rank this song 1-10: ")
-                if ranking <= 10 or ranking >= 1:
+                #cursor.execute("""INSERT INTO Song (song_ID, title, album_ID) VALUES (?,?,?)""", (track['id'],track['name'],album_id))
+                if int(ranking) <= 10 or int(ranking) >= 1:
                     ranking = int(ranking)
                     average+=ranking
                 else:
@@ -78,7 +84,7 @@ def rank_songs(artist):
         print (f"Error opening database: {e}")
 #--
 def main():
-    basic_search()
-    rank_songs("Alexander Bucaro")
+    #basic_search()
+    rank_songs("Taylor Swift")
 #--
 main()
