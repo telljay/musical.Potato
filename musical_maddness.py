@@ -51,6 +51,20 @@ def get_allAlbums(artist):
 
     return all_albums
 #--
+def get_ID(check_name):
+    results = sp.search(q=check_name, type='track,artist,album')
+
+    if results['tracks']['items']:
+        track_id = results['tracks']['items'][0]['id']
+        return track_id
+    elif results['artists']['items']:
+        artist_id = results['artists']['items'][0]['id']
+        return artist_id
+    elif results['albums']['items']:
+        album_id = results['albums']['items'][0]['id']
+        return album_id
+    else:
+        raise ValueError("No matching results found")
 def rank_songs(artist):
     try:
         entity = []
@@ -59,18 +73,33 @@ def rank_songs(artist):
         cursor = conn.cursor()
         artistAlbums = get_allAlbums(artist)
         artistAlbums.reverse()
+        cursor.execute("""INSERT INTO Artist (name) VALUES (?) """, (artist,))
+        conn.commit()
+        cursor.execute("""SELECT artist_ID FROM Artist WHERE name = ?""", (artist,))
+        row = cursor.fetchone()
+        artist_loc = row[0]
         for album in artistAlbums:
             album_id = album['id']
+
             tracks = sp.album_tracks(album_id)['items']
+
             average=0.0
-            #cursor.execute("""INSERT INTO Album (album_ID, title, releaseDate, artist_ID) VALUES (?,?,?,?)""", (album_id, album['name'], album['release_date'],album['artist']['id']))
+
+            cursor.execute("""INSERT INTO Album (title, releaseDate, artist_ID) VALUES (?,?,?)""", (album['name'], album['release_date'],artist_loc,))
+            conn.commit()
+            cursor.execute("""SELECT album_ID FROM Album WHERE title = ?""", (album['name'],))
+            row2 = cursor.fetchone
+            album_loc=row2[0]
+
             for track in tracks:
                 print(f"Current Song: {track['name']}")
                 ranking = input("Please rank this song 1-10: ")
-                #cursor.execute("""INSERT INTO Song (song_ID, title, album_ID) VALUES (?,?,?)""", (track['id'],track['name'],album_id))
+                cursor.execute("""INSERT INTO Song (title, album_ID) VALUES (?,?)""", (track['name'],album_loc,))
+                conn.commit()
                 if int(ranking) <= 10 or int(ranking) >= 1:
                     ranking = int(ranking)
                     average+=ranking
+
                 else:
                     print("INVALID RANKING")
                     print(f"Current Song: {track['name']}")
