@@ -4,7 +4,8 @@ from spotipy.oauth2 import SpotifyOAuth
 import sqlite3
 from sqlite3 import Error
 #--
-import sys
+import subprocess
+import requests
 #--
 from flask import Flask
 from flask import request
@@ -22,7 +23,7 @@ SPOTIPY_CLIENT_SECRET = '6214d65c3e454af6aa92c0ab49d14915'
 SPOTIPY_REDIRECT_URI = 'http://127.0.0.1:5000/'
 @app.route("/")
 def opening_screen():
-    return "Welcome to Advanced Musical Understanding\nPlease Log into your Spotify Account to Continue"
+    return ""
 #--
 def approve_login():
     
