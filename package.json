@@ -1,0 +1,15 @@
+{
+  "name": "musicallyrankingmadness",
+  "version": "1.0.0",
+  "description": "This application allows users to log into their Spotify account, search for artists, and rank their discography using a simple interface. Below is a breakdown of the key features and functionalities.",
+  "main": "scripts.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
