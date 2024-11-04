@@ -18,6 +18,8 @@ client_secret="6214d65c3e454af6aa92c0ab49d14915",
 redirect_uri="http://127.0.0.1:5000/",
 scope="user-library-read"))
 #--
+url = 'http://localhost:3000/search'
+#--
 SPOTIPY_CLIENT_ID = 'e3d6ae52792d4f6bb286ef14c6ee270c'
 SPOTIPY_CLIENT_SECRET = '6214d65c3e454af6aa92c0ab49d14915'
 SPOTIPY_REDIRECT_URI = 'http://127.0.0.1:5000/'
@@ -112,6 +114,14 @@ def rank_songs(artist):
 
     except Error as e:
         print (f"Error opening database: {e}")
+#--
+def get_resuts():
+    response = request.get(url)
+    if response.status_code ==  200:
+        results = response.json()
+        print("Search Bar Results:", results)
+    else:
+        print("Failed to get results")
 #--
 def main():
     #basic_search()
