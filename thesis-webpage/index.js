@@ -16,7 +16,7 @@ app.listen(port, () => {
 
 app.use(express.static(path.join(__dirname,'public')))
 
-app.get('/results.html?q=${query}',(req, res) =>{
+app.get('/results/{query}',(req, res) =>{
   const query =  req.body.results;
   res.sendFile(path.join(__dirname, 'public', 'results.html'));
   console.log("Receive search", query);
