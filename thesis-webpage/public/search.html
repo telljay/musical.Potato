@@ -16,10 +16,13 @@
             const results = await response.json(); 
             const resultsList = document.getElementById('results'); 
             resultsList.innerHTML = ''; 
-            results.forEach(item => { const li = document.createElement('li'); 
-            li.textContent = item; resultsList.appendChild(li); 
-            window.location.href = `/results.html?q=${query}`;
+            results.forEach(item => { 
+                const li = document.createElement('li'); 
+                li.textContent = item.Name; // Adjusted to match the JSON structure from Python
+                resultsList.appendChild(li); 
             }); 
+            window.location.href = `/results?q=${query}`;
         });
     </script>
 </body>
+</html>

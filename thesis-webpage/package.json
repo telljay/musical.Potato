@@ -8,8 +8,15 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
-    "express": "^4.21.1"
-  }
+    "axios": "^1.7.9",
+    "express": "^4.21.2",
+    "formidable": "^3.5.2",
+    "jsonify": "^0.0.1",
+    "spotify": "^0.3.0",
+    "spotify-web-api-node": "^5.0.2",
+    "superagent": "^10.1.1"
+  },
+  "devDependencies": {},
+  "description": ""
 }

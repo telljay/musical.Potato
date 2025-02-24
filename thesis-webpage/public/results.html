@@ -19,16 +19,10 @@
             resultsList.innerHTML = '';
             results.forEach(item => {
                 const li = document.createElement('li');
-                li.textContent = item;
+                li.textContent = item.Name; // Adjusted to match the JSON structure from Python
                 resultsList.appendChild(li);
-            })
-            await fetch('/search', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ results }),
-            })
-        })
+            });
+        });
     </script>
 </body>
+</html>

@@ -8,6 +8,7 @@ import subprocess
 import requests
 #--
 from flask import Flask
+from flask import jsonify
 from flask import request
 from flask import current_app
 from flask import abort
@@ -31,18 +32,18 @@ def approve_login():
     
     return False
 #--
-@app.route("/search", methods= ["POST"])
+@app.route("/search", methods=["GET"])
 def basic_search():
-    jsonPostData = request.get_json()
-    searchCriteria = jsonPostData["searchBarResults"]
+    searchCriteria = request.args.get("q")
+    if not searchCriteria:
+        return jsonify({"error": "No search criteria provided"}), 400
+
     results = sp.search(q=searchCriteria, type='artist', limit=5)
-    artistIDArray=[]
+    almostJson = []
     for artist in results['artists']['items']:
-        print(f"Artist Name: {artist['name']}, Popularity: {artist['popularity']}, Followers: {artist['followers']['total']}")
-
-    selectedArtist = int(input(f"select 1-5 to select the artist to rank"))
-
-    return  results
+        almostJson.append({"Name": artist['name']})
+    
+    return jsonify(almostJson)
 #--
 def get_allAlbums(artist):
     artist_name = artist
@@ -91,7 +92,7 @@ def rank_songs(artist):
             cursor.execute("""INSERT INTO Album (title, releaseDate, artist_ID) VALUES (?,?,?)""", (album['name'], album['release_date'],artist_loc,))
             conn.commit()
             cursor.execute("""SELECT album_ID FROM Album WHERE title = ?""", (album['name'],))
-            row2 = cursor.fetchone
+            row2 = cursor.fetchone()
             album_loc=row2[0]
 
             for track in tracks:
@@ -124,7 +125,6 @@ def get_resuts():
         print("Failed to get results")
 #--
 def main():
-    #basic_search()
-    rank_songs("Taylor Swift")
+    basic_search()
+    #print(get_allAlbums("Taylor Swift"))
 #--
-main()
