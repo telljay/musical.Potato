@@ -188,8 +188,6 @@ function renderTemplate(targetId, templateId, data = null) {
 }
 
 
-
-
 //--
 app.use(bodyParser.json())
 
