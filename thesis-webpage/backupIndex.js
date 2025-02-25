@@ -19,11 +19,13 @@ function generateRandomString(length) {
 var scopes = ['user-read-private', 'user-read-email'],
   redirectUri = 'http://localhost:3000/search',
   clientId = 'e3d6ae52792d4f6bb286ef14c6ee270c',
+  clientSecret = '6214d65c3e454af6aa92c0ab49d14915'
   state = generateRandomString(16);
 
 var spotifyApi = new SpotifyWebApi({
     redirectUri: redirectUri,
-    clientId: clientId
+    clientId: clientId,
+    clientSecret: clientSecret
 });
 //--
 var authorizeURL = spotifyApi.createAuthorizeURL(scopes,state);
@@ -46,7 +48,6 @@ app.get('/', (req, res) => {
             <h1>Welcome to Advanced Musical Understanding</h1>
             <h3>Please login to your Spotify account</h3>
             <a id="loginLink" href="${authorizeURL}">Login with Spotify</a>
-            <p id="authorizeURL">${authorizeURL}</p>
         </body>
         </html>
     `);
@@ -64,7 +65,23 @@ app.get('/results/{query}',(req, res) =>{
 });
 
 app.get('/search', (req, res) => {
-    res.send("You made it!!")
-   //const query = req.query.q; 
-   //res.sendFile(path.join(__dirname, 'public', 'search.html'));
+    //res.send("You made it!!")
+   const query = req.query.code; 
+   console.log(query)
+   spotifyApi.authorizationCodeGrant(query).then(
+    function(data) {
+      console.log('The token expires in ' + data.body['expires_in']);
+      console.log('The access token is ' + data.body['access_token']);
+      console.log('The refresh token is ' + data.body['refresh_token']);
+  
+      // Set the access token on the API object to use it in later calls
+      spotifyApi.setAccessToken(data.body['access_token']);
+      spotifyApi.setRefreshToken(data.body['refresh_token']);
+    },
+    function(err) {
+      console.log('Something went wrong!', err);
+    }
+  );
+   res.sendFile(path.join(__dirname, 'public', 'search.html'));
 });
+
