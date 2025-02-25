@@ -216,7 +216,7 @@ app.get('/search', (req, res) => {
 });
 
 
-spotifyApi.getArtistAlbums('43ZHCT0cAZBISjO8DG9PnE').then(
+spotifyApi.getArtistAlbums('').then(
   function(data) {
     console.log('Artist albums', data.body);
   },
