@@ -57,18 +57,15 @@ app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}/`);
 });
 
-app.get('/results/{query}',(req, res) =>{
+app.get('/results',(req, res) =>{
   const query =  req.body.results;
-  res.sendFile(path.join(__dirname, 'public', 'results.html'));
   console.log("Receive search", query);
   res.sendStatus(200);
 });
 
 app.get('/search', (req, res) => {
-    //res.send("You made it!!")
-   const query = req.query.code; 
-   console.log(query)
-   spotifyApi.authorizationCodeGrant(query).then(
+   const code = req.query.code; 
+   spotifyApi.authorizationCodeGrant(code).then(
     function(data) {
       console.log('The token expires in ' + data.body['expires_in']);
       console.log('The access token is ' + data.body['access_token']);
@@ -77,11 +74,20 @@ app.get('/search', (req, res) => {
       // Set the access token on the API object to use it in later calls
       spotifyApi.setAccessToken(data.body['access_token']);
       spotifyApi.setRefreshToken(data.body['refresh_token']);
+
+      const results = "taylor";
+      spotifyApi.searchArtists(results,{limit:5,offset:1})
+      .then(function(data){
+           console.log(data.body.artists.href);
+      }, function(err){
+           console.log('Oh fuck',err);
+      })
     },
     function(err) {
       console.log('Something went wrong!', err);
     }
   );
    res.sendFile(path.join(__dirname, 'public', 'search.html'));
+
 });
 
