@@ -17,7 +17,7 @@ function generateRandomString(length) {
 }
 //Create port for spotify access
 var scopes = ['user-read-private', 'user-read-email'],
-  redirectUri = 'http://localhost:3000/search',
+  redirectUri = 'http://localhost:3000/auth',
   clientId = 'e3d6ae52792d4f6bb286ef14c6ee270c',
   clientSecret = '6214d65c3e454af6aa92c0ab49d14915'
   state = generateRandomString(16);
@@ -58,13 +58,32 @@ app.listen(port, () => {
 });
 
 app.get('/results',(req, res) =>{
-  const query =  req.body.results;
+  const query =  req.query.q;
   console.log("Receive search", query);
   res.sendStatus(200);
 });
 
-app.get('/search', (req, res) => {
+app.get('/search', (req,res)=>{
+  res.sendFile(path.join(__dirname, 'public', 'search.html'));
+  let results = ""
+  if(req.query.q){
+    results = req.query.q;
+    spotifyApi.searchArtists(results,{limit:5,offset:1})
+    .then(function(data){
+      data.body.artists.items.forEach(item => {
+      console.log(item.name);
+      });
+      console.log();
+    }, function(err){
+      console.log('Oh fuck: ',err);
+    })
+  }
+  
+});
+
+app.get('/auth', (req, res) => {
    const code = req.query.code; 
+   console.log(req.query)
    spotifyApi.authorizationCodeGrant(code).then(
     function(data) {
       console.log('The token expires in ' + data.body['expires_in']);
@@ -74,20 +93,28 @@ app.get('/search', (req, res) => {
       // Set the access token on the API object to use it in later calls
       spotifyApi.setAccessToken(data.body['access_token']);
       spotifyApi.setRefreshToken(data.body['refresh_token']);
+      //--
 
-      const results = "taylor";
-      spotifyApi.searchArtists(results,{limit:5,offset:1})
-      .then(function(data){
-           console.log(data.body.artists.href);
-      }, function(err){
-           console.log('Oh fuck',err);
-      })
+      //--
     },
     function(err) {
       console.log('Something went wrong!', err);
     }
   );
-   res.sendFile(path.join(__dirname, 'public', 'search.html'));
-
+  var searchURL = "http://localhost:3000/search"
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Home2</title>
+    </head>
+    <body>
+        <h1>Welcome to Advanced Musical Understanding</h1>
+        <h3>Please Go to Search</h3>
+        <a id="searchUrl" href="${searchURL}">Go To Search</a>
+    </body>
+    </html>
+`);
 });
-

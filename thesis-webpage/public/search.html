@@ -8,20 +8,21 @@
 </head>
 <body>
     <input type="text" id="searchInput" placeholder="Search...">
+    <button id="searchButton">Search</button>
     <ul id="results"></ul>
     <script>
-        document.getElementById('searchInput').addEventListener('input', async function() { 
-            const query = this.value; 
+        document.getElementById('searchButton').addEventListener('click', async function() { 
+            const query = document.getElementById('searchInput').value; 
             const response = await fetch(`/search?q=${query}`); 
             const results = await response.json(); 
             const resultsList = document.getElementById('results'); 
-            resultsList.innerHTML = ''; 
+            resultsList.innerHTML = ''; // Clear previous results
             results.forEach(item => { 
                 const li = document.createElement('li'); 
-                li.textContent = item.Name; // Adjusted to match the JSON structure from Python
+                li.textContent = item.Name;
                 resultsList.appendChild(li); 
             }); 
-            window.location.href = `/results?q=${query}`;
+            window.location.href = `http://localhost:3000/results?q=${query}`;
         });
     </script>
 </body>
