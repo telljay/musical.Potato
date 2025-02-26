@@ -13,8 +13,9 @@
     <script>
         document.getElementById('searchButton').addEventListener('click', async function() { 
             const query = document.getElementById('searchInput').value; 
-            const response = await fetch(`/search?q=${query}`); 
-            const results = await response.json(); 
+            //const response = await fetch(`/search?q=${query}`); 
+            window.location.href = `/results?q=${query}`; // Send the user to the results page immediately
+            //const results = await response.json(); 
             const resultsList = document.getElementById('results'); 
             resultsList.innerHTML = ''; // Clear previous results
             results.forEach(item => { 
@@ -22,7 +23,6 @@
                 li.textContent = item.Name;
                 resultsList.appendChild(li); 
             }); 
-            window.location.href = `http://localhost:3000/results?q=${query}`;
         });
     </script>
 </body>

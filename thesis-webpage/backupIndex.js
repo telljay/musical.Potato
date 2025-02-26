@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser')
 const path = require('path');
 const app = express();
-const port = 3000;
+const port = 1989;
 const SpotifyWebApi = require('spotify-web-api-node');
 
 //Function to generate random string for the state
@@ -17,7 +17,7 @@ function generateRandomString(length) {
 }
 //Create port for spotify access
 var scopes = ['user-read-private', 'user-read-email'],
-  redirectUri = 'http://localhost:3000/auth',
+  redirectUri = 'http://localhost:1989/auth',
   clientId = 'e3d6ae52792d4f6bb286ef14c6ee270c',
   clientSecret = '6214d65c3e454af6aa92c0ab49d14915'
   state = generateRandomString(16);
@@ -29,11 +29,16 @@ var spotifyApi = new SpotifyWebApi({
 });
 //--
 var authorizeURL = spotifyApi.createAuthorizeURL(scopes,state);
+var artistNames=[];
 
 //Middleware
 app.use(bodyParser.json())
 app.use(express.static(path.join(__dirname,'public')))
 
+//set up the port for the server
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}/`);
+});
 //Serve the homepage with authorizeURL
 app.get('/', (req, res) => {
     res.send(`
@@ -51,34 +56,6 @@ app.get('/', (req, res) => {
         </body>
         </html>
     `);
-});
-
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}/`);
-});
-
-app.get('/results',(req, res) =>{
-  const query =  req.query.q;
-  console.log("Receive search", query);
-  res.sendStatus(200);
-});
-
-app.get('/search', (req,res)=>{
-  res.sendFile(path.join(__dirname, 'public', 'search.html'));
-  let results = ""
-  if(req.query.q){
-    results = req.query.q;
-    spotifyApi.searchArtists(results,{limit:5,offset:1})
-    .then(function(data){
-      data.body.artists.items.forEach(item => {
-      console.log(item.name);
-      });
-      console.log();
-    }, function(err){
-      console.log('Oh fuck: ',err);
-    })
-  }
-  
 });
 
 app.get('/auth', (req, res) => {
@@ -101,7 +78,7 @@ app.get('/auth', (req, res) => {
       console.log('Something went wrong!', err);
     }
   );
-  var searchURL = "http://localhost:3000/search"
+  var searchURL = "http://localhost:1989/search"
   res.send(`
     <!DOCTYPE html>
     <html lang="en">
@@ -117,4 +94,47 @@ app.get('/auth', (req, res) => {
     </body>
     </html>
 `);
+});
+
+function QueSearchResult(searchWord) {
+    return spotifyApi.searchArtists(searchWord, { limit: 5, offset: 1 })
+        .then(function(data) {
+            let artistNames = [];
+            data.body.artists.items.forEach(artist => {
+                console.log(artist.name, "'s Spotify ID is ",artist.id);
+                artistNames.push(artist.name);
+            });
+            return artistNames;
+        }, function(err) {
+            console.log('Oh no: ', err);
+            return [];
+        });
+}
+
+app.get('/search', (req,res)=>{
+  res.sendFile(path.join(__dirname, 'public', 'search.html')); 
+});
+
+app.get('/results', async (req, res) => {
+    const query = req.query.q;
+    console.log("Receive search", query);
+    const artistNames = await QueSearchResult(query);
+    res.send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Results</title>
+        </head>
+        <body>
+            <h1>Results...</h1>
+            ${artistNames.map(name => `<h3>${name}</h3>`).join('')}
+        </body>
+        </html>
+    `);
+});
+
+app.get("/results/:name", (req,res) =>{
+
 });
