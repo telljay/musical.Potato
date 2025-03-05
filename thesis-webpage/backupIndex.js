@@ -2,8 +2,12 @@ const express = require('express');
 const bodyParser = require('body-parser')
 const path = require('path');
 const app = express();
+const morgan = require('morgan')
 const port = 1989;
 const SpotifyWebApi = require('spotify-web-api-node');
+app.use(morgan('dev'))
+//Functions to create SQL queries
+
 
 //Function to generate random string for the state
 function generateRandomString(length) {
@@ -29,12 +33,11 @@ var spotifyApi = new SpotifyWebApi({
 });
 //--
 var authorizeURL = spotifyApi.createAuthorizeURL(scopes,state);
-var artistNames=[];
+var artistNamesAndID={};
 
 //Middleware
 app.use(bodyParser.json())
 app.use(express.static(path.join(__dirname,'public')))
-
 //set up the port for the server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}/`);
@@ -60,12 +63,8 @@ app.get('/', (req, res) => {
 
 app.get('/auth', (req, res) => {
    const code = req.query.code; 
-   console.log(req.query)
    spotifyApi.authorizationCodeGrant(code).then(
     function(data) {
-      console.log('The token expires in ' + data.body['expires_in']);
-      console.log('The access token is ' + data.body['access_token']);
-      console.log('The refresh token is ' + data.body['refresh_token']);
   
       // Set the access token on the API object to use it in later calls
       spotifyApi.setAccessToken(data.body['access_token']);
@@ -101,8 +100,8 @@ function QueSearchResult(searchWord) {
         .then(function(data) {
             let artistNames = [];
             data.body.artists.items.forEach(artist => {
-                console.log(artist.name, "'s Spotify ID is ",artist.id);
                 artistNames.push(artist.name);
+                artistNamesAndID[artist.name] = artist.id;
             });
             return artistNames;
         }, function(err) {
@@ -129,12 +128,54 @@ app.get('/results', async (req, res) => {
         </head>
         <body>
             <h1>Results...</h1>
-            ${artistNames.map(name => `<h3>${name}</h3>`).join('')}
+            ${artistNames.map(name => `<a id = "artistResultsUrl" href = http://localhost:1989/readytorank?id=${artistNamesAndID[name]}>${name}</a>`).join('<h4></h4>')}
+        </body>
+        </html>
+    `);
+});
+var albumsandId = {};
+function GetAlbums(artistID){
+    return spotifyApi.getArtistAlbums(artistID)
+        .then(function(data){
+            let quedAlbums = []
+            data.body.items.forEach(album => {
+                quedAlbums.push(album.name);
+                albumsandId[album.name] = album.id;
+            });
+            return quedAlbums;
+        },function(err){
+            console.log("Oops",err);
+            return[];
+        })   
+
+}
+app.get("/readytorank", async (req, res) => {
+    const albums = await GetAlbums(req.query.id);
+    res.send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Ranking Page</title>
+        </head>
+        <body>
+            <h1>Select the Album to begin with...</h1>
+            <ul id="albumList">
+                ${albums.map(album => `<a id = "albumNameId" href = http://localhost:1989/ranking/${albumsandId[album]}>${album}</a>`).join('')}
+            </ul>
         </body>
         </html>
     `);
 });
 
-app.get("/results/:name", (req,res) =>{
+app.use('ranking/:albumID/:songID', (req,res)=>{
 
+})
+
+app.use('ranking/:albumID/:songID/:prevRanking')
+
+//404 page not found 
+app.use((req, res) => { 
+    res.status(404).send(`<h2>Uh Oh!</h2><p>Sorry ${req.url} cannot be found here</p><h3>Please return to the home page</h3><a id="returnURL" href = http://localhost:1989/>Return to Safety</a>`);
 });

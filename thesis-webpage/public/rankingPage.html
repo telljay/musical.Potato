@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking Page</title>
+</head>
+<body>
+    <h1>Album Rankings</h1>
+    <ul id="album-list"></ul>
+
+    <script src="backupIndex.js"></script>
+    <script>
+        // Assuming backupIndex.js exports a variable named `albums`
+        document.addEventListener('DOMContentLoaded', () => {
+            const albumList = document.getElementById('album-list');
+            albums.forEach(album => {
+                const listItem = document.createElement('li');
+                listItem.textContent = album;
+                albumList.appendChild(listItem);
+            });
+        });
+    </script>
+</body>
+</html>
