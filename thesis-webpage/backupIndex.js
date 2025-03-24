@@ -5,7 +5,10 @@ const app = express();
 const morgan = require('morgan')
 const port = 1989;
 const SpotifyWebApi = require('spotify-web-api-node');
-app.use(morgan('dev'))
+const DBAbstraction = require("./DBAbstraction");
+const db = new DBAbstraction(path.join(__dirname,'data',"musicalPotato.sqlite"));
+
+app.use(morgan('dev'));
 //Functions to create SQL queries
 
 
@@ -39,10 +42,19 @@ var artistNamesAndID={};
 app.use(bodyParser.json())
 app.use(express.static(path.join(__dirname,'public')))
 //set up the port for the server
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}/`);
-});
+db.init() 
+    .then(() => { 
+        app.listen(port, () => {
+            console.log(`Server running at http://localhost:${port}/`);
+          });
+    }) 
+    .catch(err => { 
+        console.log('Problem setting up the database'); 
+        console.log(err); 
+    });
+
 //Serve the homepage with authorizeURL
+
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html>
@@ -173,7 +185,7 @@ app.use('ranking/:albumID/:songID', (req,res)=>{
 
 })
 
-app.use('ranking/:albumID/:songID/:prevRanking')
+//app.use('ranking/:albumID/:songID/:prevRanking')
 
 //404 page not found 
 app.use((req, res) => { 
