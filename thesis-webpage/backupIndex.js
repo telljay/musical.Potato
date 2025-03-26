@@ -36,6 +36,7 @@ var spotifyApi = new SpotifyWebApi({
 });
 //--
 var authorizeURL = spotifyApi.createAuthorizeURL(scopes,state);
+
 var artistNamesAndID={};
 
 //Middleware
@@ -77,34 +78,19 @@ app.get('/auth', (req, res) => {
    const code = req.query.code; 
    spotifyApi.authorizationCodeGrant(code).then(
     function(data) {
-  
-      // Set the access token on the API object to use it in later calls
-      spotifyApi.setAccessToken(data.body['access_token']);
-      spotifyApi.setRefreshToken(data.body['refresh_token']);
-      //--
-
-      //--
+        // Set the access token on the API object to use it in later calls
+        spotifyApi.setAccessToken(data.body['access_token']);
+        spotifyApi.setRefreshToken(data.body['refresh_token']);
+        //--
+        
+        //--
+        res.redirect('/search')
     },
     function(err) {
-      console.log('Something went wrong!', err);
+        console.log('Something went wrong!', err);
+        res.redirect(`/err`)
     }
   );
-  var searchURL = "http://localhost:1989/search"
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Home2</title>
-    </head>
-    <body>
-        <h1>Welcome to Advanced Musical Understanding</h1>
-        <h3>Please Go to Search</h3>
-        <a id="searchUrl" href="${searchURL}">Go To Search</a>
-    </body>
-    </html>
-`);
 });
 
 function QueSearchResult(searchWord) {
@@ -140,7 +126,7 @@ app.get('/results', async (req, res) => {
         </head>
         <body>
             <h1>Results...</h1>
-            ${artistNames.map(name => `<a id = "artistResultsUrl" href = http://localhost:1989/readytorank?id=${artistNamesAndID[name]}>${name}</a>`).join('<h4></h4>')}
+            ${artistNames.map(name => `<a id = "artistResultsUrl" href = http://localhost:1989/readytorank?id=${artistNamesAndID[name]}&name=${name}>${name}</a>`).join('<h4></h4>')}
         </body>
         </html>
     `);
@@ -162,6 +148,14 @@ function GetAlbums(artistID){
 
 }
 app.get("/readytorank", async (req, res) => {
+    let artistID;
+    db.insertArtist(req.query.id, req.query.name)
+        .then((artistId) => {
+            console.log(`Artist ID: ${artistId}`); // Should log the correct artist ID
+        })
+        .catch((err) => {
+            console.error(`Error: ${err.message}`);
+        });
     const albums = await GetAlbums(req.query.id);
     res.send(`
         <!DOCTYPE html>
@@ -174,12 +168,17 @@ app.get("/readytorank", async (req, res) => {
         <body>
             <h1>Select the Album to begin with...</h1>
             <ul id="albumList">
-                ${albums.map(album => `<a id = "albumNameId" href = http://localhost:1989/ranking/${albumsandId[album]}>${album}</a>`).join('')}
+                ${albums.map(album => `<a id = "albumNameId" href = http://localhost:1989/ranking/?albumId=${albumsandId[album]}&artistDBID=${artistID}>${album}</a> <h3/>`).join('')}
             </ul>
         </body>
         </html>
     `);
 });
+
+app.use('ranking/:albumID',async (req,res)=>{
+    let albuminfo = await spotifyApi.getAlbum(req.query.albumID)
+    await db.insertAlbum(req.query.albumID,albuminfo.name, req.query.artistDBID).then(console.log("success"))
+})
 
 app.use('ranking/:albumID/:songID', (req,res)=>{
 
