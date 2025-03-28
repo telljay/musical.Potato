@@ -1,0 +1,8 @@
+<h1>Select the Album to begin with...</h1> <br/>
+{{#if albums}}
+    {{#each albums}}
+        <h5><a href="{{this.Link}}" target="_self">{{this.Title}}</a></h5> <br/>
+    {{/each}}
+{{else}}
+    <p>No albums found.</p>
+{{/if}}

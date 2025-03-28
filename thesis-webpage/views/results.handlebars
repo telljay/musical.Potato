@@ -1,0 +1,8 @@
+<h1>Results...</h1>  <br/>
+{{#if artists}}
+    {{#each artists}}
+        <h5><a href="{{this.link}}" target="_self">{{this.name}}</a></h5> <br/>
+    {{/each}}
+{{else}}
+    <p>No artists found.</p>
+{{/if}}
