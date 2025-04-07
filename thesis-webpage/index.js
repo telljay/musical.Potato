@@ -40,7 +40,6 @@ var spotifyApi = new SpotifyWebApi({
 //--
 var authorizeURL = spotifyApi.createAuthorizeURL(scopes,state);
 
-var artistNamesAndID={};
 
 //Middleware
 app.use(bodyParser.json())
@@ -62,6 +61,7 @@ db.init()
 app.get('/', (req, res) => {
     res.render('home', {URL: authorizeURL})
 });
+//--
 
 app.get('/auth', (req, res) => {
    const code = req.query.code; 
@@ -81,6 +81,7 @@ app.get('/auth', (req, res) => {
     }
   );
 });
+//--
 
 function QueSearchResult(searchWord) {
     return spotifyApi.searchArtists(searchWord, { limit: 5, offset: 1 })
@@ -89,8 +90,6 @@ function QueSearchResult(searchWord) {
             data.body.artists.items.forEach(artist => {
                 let link = `http://localhost:1989/albums?id=${artist.id}&name=${artist.name}`
                 artistNames.push({name: artist.name, link: link});
-
-                artistNamesAndID[artist.name] = artist.id;
             });
             return artistNames;
         }, function(err) {
@@ -98,6 +97,7 @@ function QueSearchResult(searchWord) {
             return [];
         });
 }
+//--
 
 app.get('/search', (req,res)=>{
   if(spotifyApi.getAccessToken()){
@@ -107,6 +107,7 @@ app.get('/search', (req,res)=>{
     res.redirect('/')
   }
 });
+//--
 
 app.get('/results', async (req, res) => {
   if(spotifyApi.getAccessToken()){
@@ -119,7 +120,7 @@ app.get('/results', async (req, res) => {
   }
 
 });
-var albumsandId = {};
+//--
 
 function GetAlbums(artistID,dbId){
     return spotifyApi.getArtistAlbums(artistID)
@@ -127,7 +128,6 @@ function GetAlbums(artistID,dbId){
             let quedAlbums = []
             data.body.items.forEach(album => {
               quedAlbums.push({Title: album.name, ArtistDBId: dbId, Id:album.id});
-              albumsandId[album.name] = album.id;
             });
             return quedAlbums;
         },function(err){
@@ -136,6 +136,7 @@ function GetAlbums(artistID,dbId){
         })   
 
 }
+//--
 
 app.get("/albums", async (req, res) => {
   if(spotifyApi.getAccessToken()){
@@ -154,6 +155,8 @@ app.get("/albums", async (req, res) => {
     res.redirect('/')
   }
 });
+//--
+
 function getAlbumInfo(albumId){
   return spotifyApi.getAlbum(albumId)
   .then(function(data){
@@ -167,20 +170,36 @@ function getAlbumInfo(albumId){
   },function(err){
     console.log("Oops",err);
 })}
+//--
+
 app.get('/ranking',async (req,res)=>{
   if(spotifyApi.getAccessToken()){
     let albuminfo = await getAlbumInfo(req.query.albumId);
-    await db.insertAlbum(albuminfo.AlbumID, albuminfo.AlbumName, req.query.artistDBID);
-    res.render('ranking')
+    let albumDatabase = await db.insertAlbum(albuminfo.AlbumID, albuminfo.AlbumName, req.query.artistDBID);
+    let songs =[];
+    for(let i =0;i<albuminfo.Tracks.length;i++){
+      songs.push({
+        Title: albuminfo.Tracks[i].name,
+        AlbumCover: albuminfo.AlbumCover,
+        SpotifyId: albuminfo.Tracks[i].id,
+        Tracknum: albuminfo.Tracks[i].track_number,
+        AlbumDatabaseId: albumDatabase
+      })
+    }
+    console.log(songs);
+    await db.insertSong(songs[0].SpotifyId,songs[0].Title,songs[0].AlbumDatabaseId);
+    res.render('ranking',songs[0]);
   }
   else{
     res.redirect('/')
   }
 })
+//--
 
-app.get('/ranking/:albumID/:songID', (req,res)=>{
-
+app.post('/ranking/:albumID/:songID', (req,res)=>{
+  
 })
+//--
 
 //app.use('ranking/:albumID/:songID/:prevRanking')
 
