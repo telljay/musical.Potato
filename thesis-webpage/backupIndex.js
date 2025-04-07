@@ -196,7 +196,7 @@ app.get('/ranking',async (req,res)=>{
     await db.insertAlbum(req.query.albumID,albuminfo.name, req.query.artistDBID).then(console.log("success"))
 })
 
-app.get('/ranking/:albumID/:songID', (req,res)=>{
+app.post('/ranking', (req,res)=>{
 
 })
 
