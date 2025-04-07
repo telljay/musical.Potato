@@ -43,6 +43,7 @@ var authorizeURL = spotifyApi.createAuthorizeURL(scopes,state);
 
 //Middleware
 app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true })); // Add this line to parse form data
 app.use(express.static(path.join(__dirname,'public')))
 //set up the port for the server
 
@@ -59,19 +60,19 @@ db.init()
 //Serve the homepage with authorizeURL if the database sets up
 
 app.get('/', (req, res) => {
-    res.render('home', {URL: authorizeURL})
+  res.render('home', {URL: authorizeURL})
 });
 //--
 
-app.get('/auth', (req, res) => {
+app.get('/auth', async (req, res) => {
    const code = req.query.code; 
    spotifyApi.authorizationCodeGrant(code).then(
-    function(data) {
-        // Set the access token on the API object to use it in later calls
+    async function(data) {
         spotifyApi.setAccessToken(data.body['access_token']);
         spotifyApi.setRefreshToken(data.body['refresh_token']);
         //--
-        
+        let userId = await spotifyApi.getMe();
+        await db.insertUser(userId.body.id);
         //--
         res.redirect('/search')
     },
@@ -162,7 +163,7 @@ function getAlbumInfo(albumId){
   .then(function(data){
     return { 
       AlbumCover: data.body.images[0],
-      AlbumId: data.id,
+      AlbumId: albumId,
       AlbumName: data.body.name,
       ArtistSpotifyId: data.body.artists[0].name,
       Tracks: data.body.tracks.items
@@ -175,20 +176,40 @@ function getAlbumInfo(albumId){
 app.get('/ranking',async (req,res)=>{
   if(spotifyApi.getAccessToken()){
     let albuminfo = await getAlbumInfo(req.query.albumId);
-    let albumDatabase = await db.insertAlbum(albuminfo.AlbumID, albuminfo.AlbumName, req.query.artistDBID);
+    let albumDatabase = await db.insertAlbum(albuminfo.AlbumId, albuminfo.AlbumName, req.query.artistDBID);
     let songs =[];
     for(let i =0;i<albuminfo.Tracks.length;i++){
+      let songDbId = await db.insertSong(albuminfo.Tracks[i].id,albuminfo.Tracks[i].name,albumDatabase, albuminfo.Tracks[i].track_number);
       songs.push({
         Title: albuminfo.Tracks[i].name,
-        AlbumCover: albuminfo.AlbumCover,
+        AlbumCover: albuminfo.AlbumCover.url,
         SpotifyId: albuminfo.Tracks[i].id,
         Tracknum: albuminfo.Tracks[i].track_number,
-        AlbumDatabaseId: albumDatabase
+        AlbumDatabaseId: albumDatabase,
+        SongDatabaseId: songDbId
       })
     }
-    console.log(songs);
-    await db.insertSong(songs[0].SpotifyId,songs[0].Title,songs[0].AlbumDatabaseId);
-    res.render('ranking',songs[0]);
+    let userId=await spotifyApi.getMe();
+    userId = await db.getUserDbIdFromUserId(userId.body.id);
+    let currentSongFound = false;
+    for(let i = 0;i<songs.length;i++){
+      let row = await db.getRanking(userId,songs[i].SongDatabaseId);
+      if(row==undefined){
+        break;
+      }
+      else if(row.IsCurrentSong){
+        currentSongFound = songs[i];
+        break;
+      }
+    }
+    if(currentSongFound){
+      res.render('ranking',currentSongFound)
+    }
+    else{
+      let song = await db.getSongByTrackNumber(songs[0].AlbumDatabaseId,songs[0].Tracknum);
+      await db.insertUserRanking(userId,song.Id)
+      res.render('ranking', songs[0])
+    }
   }
   else{
     res.redirect('/')
@@ -196,12 +217,30 @@ app.get('/ranking',async (req,res)=>{
 })
 //--
 
-app.post('/ranking/:albumID/:songID', (req,res)=>{
-  
-})
+app.post('/ranking', async (req, res) => {
+  let userId=await spotifyApi.getMe();
+  userId = userId.body.id; 
+  userId = await db.getUserDbIdFromUserId(userId);
+  let songId = await db.getSongByTrackNumber(parseInt(req.query.albumId), parseInt(req.query.prev_tracknum));
+  await db.updateRanking(userId, songId.Id, req.body.Ranking);
+  let newSong = await db.getSongByTrackNumber(parseInt(req.query.albumId), parseInt(req.query.prev_tracknum) + 1);
+  if(newSong ==undefined){
+    res.send("done with album");
+  }
+  else {
+    await db.insertUserRanking(userId, newSong.Id);
+
+    let data = {
+      AlbumCover: (req.body.AlbumCover), // Parse the album cover JSON string
+      AlbumDatabaseId: req.query.albumId,
+      Tracknum: parseInt(req.query.prev_tracknum) + 1,
+      Title: newSong.Title // Correctly fetch the new song title
+    };
+    res.render("ranking", data);
+  }
+});
 //--
 
-//app.use('ranking/:albumID/:songID/:prevRanking')
 
 //404 page not found 
 app.use((req, res) => { 

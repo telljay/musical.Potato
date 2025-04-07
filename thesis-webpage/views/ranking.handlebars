@@ -1,7 +1,18 @@
-<img src="{{AlbumCover.url}}" >
+<img src="{{AlbumCover}}" >
 <h4>{{Title}}</h4>
-<form action="/ranking" method="POST">
-<input type="range" name="RankingSlider" id="Ranking" min="0" max="10" >
-<input type="number" name="RankingInput" id="Ranking" min="0" max="10">
-<button class = "btn btn-primary" type="submit">Submit</button>
+<form action="/ranking?albumId={{AlbumDatabaseId}}&prev_tracknum={{Tracknum}}" method="POST">
+  <input type="range" name="Ranking" id="RankingSlider" min="0" max="10" oninput="syncInput(this.value)" value="5">
+  <input type="number" id="RankingInput" min="0" max="10" oninput="syncSlider(this.value)" value="5">
+  <input type="hidden" name="AlbumCover" id="AlbumCoverInput" value="{{AlbumCover}}">
+  <button class="btn btn-primary" type="submit">Submit</button>
 </form>
+
+<script>
+  function syncInput(value) {
+    document.getElementById('RankingInput').value = value;
+  }
+
+  function syncSlider(value) {
+    document.getElementById('RankingSlider').value = value;
+  }
+</script>
