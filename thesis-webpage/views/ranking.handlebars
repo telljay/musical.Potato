@@ -1,12 +1,14 @@
-<img src="{{AlbumCover}}" >
-<h4>{{Title}}</h4>
-<form action="/ranking?albumId={{AlbumDatabaseId}}&prev_tracknum={{Tracknum}}" method="POST">
-  <input type="range" name="Ranking" id="RankingSlider" min="0" max="10" oninput="syncInput(this.value)" value="5">
-  <input type="number" id="RankingInput" min="0" max="10" oninput="syncSlider(this.value)" value="5">
-  <input type="hidden" name="AlbumCover" id="AlbumCoverInput" value="{{AlbumCover}}">
-  <button class="btn btn-primary" type="submit">Submit</button>
-</form>
-
+<img src="{{AlbumCover}}" class="rounded mx-auto d-block" style="width: 450px; height: 450px;">
+<h4 class="d-flex justify-content-center"><a href="{{Url}}" target="_blank">{{Title}}</a></h4>
+<br/>
+<div class="d-flex justify-content-center">
+  <form action="/ranking?albumId={{AlbumDatabaseId}}&prev_tracknum={{Tracknum}}" method="POST">
+    <input type="range" name="Ranking" id="RankingSlider" min="0" max="10" oninput="syncInput(this.value)" value="5">
+    <input type="number" id="RankingInput" min="0" max="10" oninput="syncSlider(this.value)" value="5">
+    <input type="hidden" name="AlbumCover" id="AlbumCoverInput" value="{{AlbumCover}}">
+    <button class="btn btn-outline-dark" type="submit">Submit</button>
+  </form>
+</div>
 <script>
   function syncInput(value) {
     document.getElementById('RankingInput').value = value;

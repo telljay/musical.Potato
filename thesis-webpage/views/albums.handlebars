@@ -1,8 +1,10 @@
 <h1>Select the Album to begin with...</h1> <br/>
 {{#if albums}}
+<div class="d-grid gap-2 col-6 mx-auto">
     {{#each albums}}
-        <h5><a class = "btn btn-primary" href="/ranking?artistDBID={{ArtistDBId}}&albumId={{Id}}" target="_self">{{this.Title}}</a></h5> <br/>
+            <a class = "btn btn-primary" href="/ranking?artistDBID={{ArtistDBId}}&albumId={{Id}}" target="_self">{{this.Title}}</a> <br/>
     {{/each}}
+</div>
 {{else}}
     <p>No albums found.</p>
 {{/if}}

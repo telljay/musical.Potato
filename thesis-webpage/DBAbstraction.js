@@ -5,7 +5,7 @@ class DBAbstraction {
         this.fileName = fileName; 
     } 
  
-    //--
+    //-- 
     init() { 
         return new Promise((resolve, reject) => { 
             this.db = new sqlite3.Database(this.fileName, async (err) => { 
@@ -23,7 +23,7 @@ class DBAbstraction {
         }); 
     } 
  
-    //--
+    //-- 
     createTables() { 
         const sql1 = ` 
             CREATE TABLE IF NOT EXISTS 'Artists' (  
@@ -50,6 +50,7 @@ class DBAbstraction {
                 'Title' TEXT,
                 'Album_Id' INTEGER,
                 'Track_Number' INTEGER,
+                'Url' TEXT,
                 PRIMARY KEY('Id'),
                 FOREIGN KEY('Album_Id') REFERENCES 'Albums' ('Id') ON DELETE CASCADE
             );
@@ -71,6 +72,14 @@ class DBAbstraction {
                 FOREIGN KEY ('Song_Id') REFERENCES 'Songs' ('Id') ON DELETE CASCADE
             );
         `;
+        const sql6 = `
+            CREATE TABLE IF NOT EXISTS 'UserAlbumRanking'(
+                'User_Id' INTEGER,
+                'Album_Id' INTEGER,
+                'FullyRanked' BOOLEAN,
+                FOREIGN KEY ('User_Id') REFERENCES 'User' ('Id') ON DELETE CASCADE,
+                FOREIGN KEY ('Album_Id') REFERENCES 'Albums' ('Id') ON DELETE CASCADE
+            )`
 
         return new Promise((resolve, reject) => {
             this.db.serialize(() => {
@@ -78,7 +87,8 @@ class DBAbstraction {
                 this.db.run(sql2);
                 this.db.run(sql3);
                 this.db.run(sql4);
-                this.db.run(sql5, (err) => {
+                this.db.run(sql5);
+                this.db.run(sql6, (err) => {
                     if (err) {
                         reject(err);
                     } else {
@@ -172,7 +182,7 @@ class DBAbstraction {
         })
     })
     }
-    //--
+    //-- 
     isRanking(userId,songId){
         const sql=`
         SELECT User_Id, Song_Id
@@ -194,12 +204,35 @@ class DBAbstraction {
             })
         })
     }
+    //--
 
+    isAlbumRanking(userId,albumId){
+        const sql=`
+        SELECT *
+        FROM UserAlbumRanking 
+        WHERE User_Id = ?
+        AND Album_Id = ?`
+        return new Promise((resolve,reject)=>{
+            this.db.get(sql,[userId, albumId],(err,row)=>{
+                if(err){
+                    reject(new Error(`Error Checking for album ranking: ${err.message}`))
+                }else if(row){
+                    resolve({
+                        User_Id: row.User_Id,
+                        Album_Id: row.Album_Id,
+                        FullyRanked: row.FullyRanked
+                    });
+                } else{
+                    resolve(false);
+                }
+            })
+        })
+    }
     //returns artist Id or err
     insertArtist(spotifyId, name) {
         return this.isArtistInDB(spotifyId).then((isArtist) => {
             if (!isArtist) {
-                const sql = `INSERT INTO Artists (Spotify_Id, Name) VALUES (?, ?)`;
+                const sql = `INSERT INTO Artists (Spotify_Id, Name) VALUES (?, ?)`; 
                 return new Promise((resolve, reject) => {
                     this.db.run(sql, [spotifyId, name], (err) => {
                         if (err) {
@@ -218,12 +251,12 @@ class DBAbstraction {
     }
 
     //Takes spotifyId, Title, and the Album_id(from isAlbum()) and returns songID
-    insertSong(spotifyId, title, albumId,track_number) {
+    insertSong(spotifyId, title, albumId,track_number,url) {
         return this.isSongInDB(spotifyId).then((isSong) => {
             if (!isSong) {
-                const sql = `INSERT INTO Songs (Spotify_Id, Title, Album_Id,Track_Number) VALUES (?, ?,?,?)`;
+                const sql = `INSERT INTO Songs (Spotify_Id, Title, Album_Id,Track_Number,Url) VALUES (?,?, ?,?,?)`;
                 return new Promise((resolve, reject) => {
-                    this.db.run(sql, [spotifyId, title,albumId,track_number], (err) => {
+                    this.db.run(sql, [spotifyId, title,albumId,track_number,url], (err) => {
                         if (err) {
                             reject(new Error(`Error inserting song into the database: ${err.message}`));
                         } else {
@@ -277,7 +310,7 @@ class DBAbstraction {
             }
         });
     }
-    //--
+    //-- 
 
     insertUserRanking(userId, songId){
         return this.isRanking(userId,songId).then((isRanking)=>{
@@ -297,6 +330,27 @@ class DBAbstraction {
             }
         })
     }
+    //--
+
+    insertUserAlbumRanking(userId, albumId){
+        return this.isAlbumRanking(userId,albumId).then((isRanking)=>{
+            if(!isRanking){
+                const sql = `INSERT INTO UserAlbumRanking (User_Id, Album_Id,FullyRanked) VALUES (?,?,?)`;
+                return new Promise((resolve,reject)=>{
+                    this.db.run(sql,[userId,albumId,false],(err)=>{
+                        if(err){
+                            reject(new Error(`Error adding ranking to database ${err.message}`))
+                        }else{
+                            this.isRanking(userId,albumId).then(resolve).catch(reject);
+                        }
+                    })
+                })
+            } else{
+                return isRanking;
+            }
+        })
+    }
+    //--
 
     updateRanking(userId,songId,score){
         const sql =`
@@ -309,6 +363,24 @@ class DBAbstraction {
                 if(err){
                     reject(new Error(`Error updating the ranking ${err.message}`))
                 } else{
+                    resolve();
+                }
+            })
+        })
+    }
+    //--- 
+
+    setFullyRanked(userId, albumId, torf){
+        const sql =`
+        UPDATE UserAlbumRanking
+        SET FullyRanked = ?
+        WHERE User_Id = ?
+        AND Album_Id = ?`
+        return new Promise((resolve,reject)=>{
+            this.db.run(sql, [torf,userId,albumId],(err)=>{
+                if(err){
+                    reject(new Error(`Error Setting fully ranked album ${err.message}`));
+                }else{
                     resolve();
                 }
             })
@@ -330,8 +402,71 @@ class DBAbstraction {
                 })
             })
     }
+    //-- 
+
+    getAllSongsInDB(){
+        const sql =`
+            SELECT *
+            FROM Songs`
+            return new Promise((resolve,reject)=>{
+                this.db.all(sql,[albumId],(err,rows)=>{
+                    if(err){
+                        reject(new Error(`Error getting all songs in the database: ${err.message}`))
+                    } else{
+                        resolve(rows)
+                    }
+                })
+            })
+    }
+    //--
+    getAllAlbumsInDB(){
+        const sql =`
+            SELECT *
+            FROM Albums`
+            return new Promise((resolve,reject)=>{
+                this.db.all(sql,[albumId],(err,rows)=>{
+                    if(err){
+                        reject(new Error(`Error getting all albums in the database: ${err.message}`))
+                    } else{
+                        resolve(rows)
+                    }
+                })
+            })
+    }
     //--
 
+    getAllAlbums(artistId){
+        const sql =`
+            SELECT *
+            FROM Albums
+            WHERE Artist_Id = ?`
+            return new Promise((resolve,reject)=>{
+                this.db.all(sql,[artistId],(err,rows)=>{
+                    if(err){
+                        reject(new Error(`Error getting all albums: ${err.message}`))
+                    } else{
+                        resolve(rows)
+                    }
+                })
+            })
+    }
+    //-- 
+
+    getAllArtist(){
+        const sql =`
+            SELECT *
+            FROM Artists`
+            return new Promise((resolve,reject)=>{
+                this.db.all(sql,(err,rows)=>{
+                    if(err){
+                        reject(new Error(`Error getting all artists: ${err.message}`))
+                    } else{
+                        resolve(rows)
+                    }
+                })
+            })
+    }
+    //-- 
     getSongByTrackNumber(albumId,tracknum){
         const sql = `
             SELECT *
@@ -348,7 +483,7 @@ class DBAbstraction {
                 })
             })
     }
-    //--
+    //-- 
     getUserDbIdFromUserId(userId){
         const sql = `
         SELECT *
@@ -364,7 +499,7 @@ class DBAbstraction {
             })
         })
     }
-    //--
+    //-- 
     getRanking(userId,songId){
         const sql = `
         SELECT *
@@ -375,11 +510,54 @@ class DBAbstraction {
             this.db.get(sql, [userId,songId],(err,row)=>{
                 if(err){
                     reject(new Error(`Error getting ranking: ${err.message}`));
-                } else{
+                } else if (row){
                     resolve(row);
+                }
+                else{
+                    resolve(false);
                 }
             })
         })
+    }
+
+    isFullyRanked(albumId) {
+        const sql = `
+            SELECT FullyRanked
+            FROM Albums
+            WHERE Id = ?`;
+        return new Promise((resolve, reject) => {
+            this.db.get(sql, [albumId], (err, row) => {
+                if (err) {
+                    reject(new Error(`Error checking if album is fully ranked: ${err.message}`));
+                } else if (!row) {
+                    resolve(false); // Return false if the album does not exist
+                } else {
+                    resolve(row.FullyRanked);
+                }
+            });
+        });
+    }
+
+    debugClearDatabase() {
+        const sqls = [
+            "DELETE FROM UserRanking;",
+            "DELETE FROM Songs;",
+            "DELETE FROM Albums;",
+            "DELETE FROM Artists;",
+            "DELETE FROM User;"
+        ];
+        return new Promise((resolve, reject) => {
+            this.db.serialize(() => {
+                sqls.forEach((sql) => this.db.run(sql));
+                this.db.run("VACUUM;", (err) => {
+                    if (err) {
+                        reject(new Error(`Error clearing the database: ${err.message}`));
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+        });
     }
    
 } 
