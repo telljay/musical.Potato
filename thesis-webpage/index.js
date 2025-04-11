@@ -221,6 +221,7 @@ app.get('/ranking',async (req,res)=>{
 })
 //--
 
+//Possibly add functionality to manage current song queue and skip and play current ranking song
 app.post('/ranking', async (req, res) => {
   let userId=await spotifyApi.getMe();
   userId = userId.body.id; 
@@ -246,6 +247,7 @@ app.post('/ranking', async (req, res) => {
   }
 });
 //--
+//the holy data retrival funciton
 async function getStats(userId) {
   let allArtists = await db.getAllArtist();
   let artistArray = [];
@@ -362,10 +364,7 @@ app.get('/specificStats', async(req,res)=>{
   }
 })
 //--
-
-app.get('/recommendations', async(req,res)=>{
-
-})
+//DEBUG METHOD
 app.get('/clear',async(req,res)=>{
 if(spotifyApi.getAccessToken()){
   await db.debugClearDatabase();

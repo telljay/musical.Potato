@@ -541,10 +541,7 @@ class DBAbstraction {
     debugClearDatabase() {
         const sqls = [
             "DELETE FROM UserRanking;",
-            "DELETE FROM Songs;",
-            "DELETE FROM Albums;",
-            "DELETE FROM Artists;",
-            "DELETE FROM User;"
+            "DELETE FROM UserAlbumRanking;"
         ];
         return new Promise((resolve, reject) => {
             this.db.serialize(() => {
