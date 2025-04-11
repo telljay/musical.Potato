@@ -59,6 +59,7 @@ class DBAbstraction {
             CREATE TABLE IF NOT EXISTS 'User' (
                 'Id' INTEGER,
                 'Spotify_Id' TEXT,
+                'CurrentRanking' TEXT,
                 PRIMARY KEY('Id')
             );
         `;
@@ -500,6 +501,22 @@ class DBAbstraction {
         })
     }
     //-- 
+    getUserCurrentRanking(userId){
+        const sql = `
+        SELECT *
+        FROM User
+        WHERE Id = ?`
+        return new Promise((resolve,reject)=>{
+            this.db.get(sql,[userId],(err,row)=>{
+                if(err){
+                    reject(new Error(`Error getting the user's current position: ${err.message}`));
+                }else{
+                    resolve(row.CurrentRanking);
+                }
+            })
+        })
+    }
+    //-- 
     getRanking(userId,songId){
         const sql = `
         SELECT *
@@ -515,6 +532,22 @@ class DBAbstraction {
                 }
                 else{
                     resolve(false);
+                }
+            })
+        })
+    }
+    updateCurrentRanking(userId,url){
+        const sql = `
+        UPDATE User
+        SET CurrentRanking = ?
+        WHERE Id = ?`;
+        return new Promise((resolve,reject)=>{
+            this.db.run(sql,[url,userId],(err)=>{
+                if(err){
+                    reject(new Error(`Error updating the last ranking`));
+                }
+                else{
+                    resolve();
                 }
             })
         })

@@ -1,8 +1,44 @@
-
 <form action="/results" type="GET">
-<nav class="navbar navbar-light bg-light">
+  <nav class="navbar navbar-light bg-light">
     <form class="form-inline" action="/results" method="GET">
-    <input class="form-control mr-sm-2" type="search" name ="query" placeholder="Search for Artist" aria-label="Search">
-    <button class="btn btn-outline-dark my-2 my-sm-0" type="submit">Search</button>
-</nav>
+      <input 
+        class="form-control mr-sm-2" 
+        type="search" 
+        name="query" 
+        id="artist-search" 
+        placeholder="Search for Artist" 
+        aria-label="Search" 
+        autocomplete="off"
+      >
+      <ul id="suggestions" class="list-group position-absolute"></ul>
+      <button class="btn btn-outline-dark my-2 my-sm-0" type="submit">Search</button>
+    </form>
+  </nav>
 </form>
+
+<script>
+  const searchInput = document.getElementById('artist-search');
+  const suggestions = document.getElementById('suggestions');
+
+  searchInput.addEventListener('input', async (e) => {
+    const query = e.target.value;
+    if (query.length > 2) {
+      const response = await fetch(`/autocomplete?query=${query}`);
+      const artists = await response.json();
+      suggestions.innerHTML = '';
+      artists.forEach(artist => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item';
+        li.textContent = artist.name;
+        li.addEventListener('click', () => {
+          searchInput.value = artist.name;
+          suggestions.innerHTML = '';
+          window.location.href = `/resultstoalbums?query=${searchInput.value}`
+        });
+        suggestions.appendChild(li);
+      });
+    } else {
+      suggestions.innerHTML = '';
+    }
+  });
+</script>

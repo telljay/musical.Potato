@@ -1,3 +1,4 @@
+<a href="{{lastPlace}}" class="btn btn-primary">return to last place</a>
 <!-- Nav tabs -->
 <ul class="nav nav-tabs" id="myTab" role="tablist">
   <li class="nav-item" role="presentation">
@@ -22,7 +23,7 @@
         <th scope="col">Average</th>
       </thead>
       <tbody>
-        {{#each ArtistInfo}}
+        {{#each info.ArtistInfo}}
           <tr>
             <th scope="row">#</th>
             <td><a href="/specificStats?id={{ArtistSpotifyId}}">{{ArtistName}}</a></td>
@@ -42,7 +43,7 @@
         <th scope="col">Average</th>
       </thead>
       <tbody>
-        {{#each AlbumInfo}}
+        {{#each info.AlbumInfo}}
             <tr>
               <th scope="row">#</th>
               <td><a href="/ranking?artistDBID={{ArtistDatabaseId}}&albumId={{AlbumSpotifyId}}">{{AlbumTitle}}</a></td>
@@ -60,7 +61,7 @@
         <th scope="col">Ranking</th>
       </thead>
       <tbody>
-        {{#each SongInfo}}
+        {{#each info.SongInfo}}
           <tr>
             <th scope="row">#</th>
             <td>{{SongTitle}}</td>

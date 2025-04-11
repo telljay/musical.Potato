@@ -1,0 +1,21 @@
+#suggestions {
+    top: 100%; /* Position the suggestions directly below the input field */
+    left: 0; /* Align the suggestions with the left edge of the input field */
+    width: 100%; /* Match the width of the input field */
+    z-index: 1000; /* Ensure the suggestions appear above other elements */
+    background-color: white; /* Set a background color for better visibility */
+    border: 1px solid #000000; /* Add a border to separate suggestions from the input field */
+    border-radius: 4px; /* Optional: Add rounded corners */
+    max-height: 200px; /* Limit the height of the suggestions list */
+    overflow-y: auto; /* Add a scrollbar if the list exceeds the max height */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional: Add a shadow for better visibility */
+  }
+
+  #suggestions .list-group-item {
+    cursor: pointer; /* Change the cursor to indicate clickable items */
+    padding: 8px 12px; /* Add padding for better spacing */
+  }
+
+  #suggestions .list-group-item:hover {
+    background-color: #f8f9fa; /* Highlight the item on hover */
+  }

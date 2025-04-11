@@ -92,7 +92,7 @@ function QueSearchResult(searchWord) {
             let artistNames = [];
             data.body.artists.items.forEach(artist => {
                 let link = `/albums?id=${artist.id}&name=${artist.name}`
-                artistNames.push({name: artist.name, link: link});
+                artistNames.push({name: artist.name, link: link,SpotifyId:artist.id});
             });
             return artistNames;
         }, function(err) {
@@ -114,7 +114,7 @@ app.get('/search', (req,res)=>{
 
 app.get('/results', async (req, res) => {
   if(spotifyApi.getAccessToken()){
-      const query = req.query.query ;
+    const query = req.query.query;
     let artists = await QueSearchResult(query);
     res.render('results', {artists})
   }
@@ -139,6 +139,18 @@ function GetAlbums(artistID,dbId){
         })   
 
 }
+//--
+
+app.get('/resultstoalbums',async (req,res)=>{
+  if(spotifyApi.getAccessToken()){
+    const query = req.query.query;
+    let artists = await QueSearchResult(query);
+    res.redirect(`/albums?id=${artists[0].SpotifyId}&name=${artists[0].name}`)
+  }
+  else{
+    res.redirect('/')
+  }
+})
 //--
 
 app.get("/albums", async (req, res) => {
@@ -180,9 +192,23 @@ app.get('/ranking',async (req,res)=>{
   if(spotifyApi.getAccessToken()){
     let albuminfo = await getAlbumInfo(req.query.albumId);
     let albumDatabase = await db.insertAlbum(albuminfo.AlbumId, albuminfo.AlbumName, req.query.artistDBID);
+    await db.updateCurrentRanking(await getUserId(),`/ranking?artistDBID=${req.query.artistDBID}&albumId=${req.query.albumId}`)
     await db.insertUserAlbumRanking(await getUserId(), albumDatabase)
     let songs =[];
     for(let i =0;i<albuminfo.Tracks.length;i++){
+      let isSong=await db.isSongInDB(albuminfo.Tracks[i].id);
+      if(isSong){
+        songs.push({
+          Title: albuminfo.Tracks[i].name,
+          Url: albuminfo.Tracks[i].external_urls.spotify,
+          AlbumCover: albuminfo.AlbumCover.url,
+          SpotifyId: albuminfo.Tracks[i].id,
+          Tracknum: albuminfo.Tracks[i].track_number,
+          AlbumDatabaseId: albumDatabase,
+          SongDatabaseId: isSong
+        })
+        break;
+      }
       let songDbId = await db.insertSong(albuminfo.Tracks[i].id,albuminfo.Tracks[i].name,albumDatabase, albuminfo.Tracks[i].track_number, albuminfo.Tracks[i].external_urls.spotify);
       songs.push({
         Title: albuminfo.Tracks[i].name,
@@ -194,7 +220,6 @@ app.get('/ranking',async (req,res)=>{
         SongDatabaseId: songDbId
       })
     }
-
     let currentSongFound = false;
     for(let i = 0;i<songs.length;i++){
       let row = await db.getRanking(await getUserId(),songs[i].SongDatabaseId);
@@ -230,12 +255,12 @@ app.post('/ranking', async (req, res) => {
   await db.updateRanking(userId, songId.Id, req.body.Ranking);
   let newSong = await db.getSongByTrackNumber(parseInt(req.query.albumId), parseInt(req.query.prev_tracknum) + 1);
   if(newSong ==undefined){
+    await db.updateCurrentRanking(userId,"/stats")
     await db.setFullyRanked(await getUserId(),req.query.albumId,true);
     res.redirect("/stats");
   }
   else {
     await db.insertUserRanking(userId, newSong.Id);
-    //let url = await spotifyApi.getTrack(newSong.Spotify_Id)
     let data = {
       AlbumCover: (req.body.AlbumCover),
       AlbumDatabaseId: req.query.albumId,
@@ -338,7 +363,8 @@ async function getStats(userId) {
 app.get('/stats', async (req, res) => {
   if (spotifyApi.getAccessToken()) {
     let info = await getStats(await getUserId());
-    res.render('stats', info);
+    let lastPlace = await db.getUserCurrentRanking(await getUserId())
+    res.render('stats', {info,lastPlace});
   } else {
     res.redirect('/');
   }
@@ -355,14 +381,33 @@ app.get('/specificStats', async(req,res)=>{
         artistInfo = artist;
       }
     }
-    res.render('stats',{
+    res.render('stats',{info:{
       ArtistInfo: [artistInfo],
       AlbumInfo: artistInfo.Albums,
       SongInfo: artistInfo.AllSongs,
       BacktoStats: '/stats'
-    })
+    }})
   }
 })
+//--
+app.get('/autocomplete', async (req, res) => {
+  const query = req.query.query;
+  if (!query || query.length < 3) {
+    return res.json([]);
+  }
+
+  try {
+    const data = await spotifyApi.searchArtists(query, { limit: 5 });
+    const artists = data.body.artists.items.map(artist => ({
+      name: artist.name,
+      id: artist.id
+    }));
+    res.json(artists);
+  } catch (err) {
+    console.error('Error fetching artist suggestions:', err);
+    res.status(500).json([]);
+  }
+});
 //--
 //DEBUG METHOD
 app.get('/clear',async(req,res)=>{
