@@ -11,7 +11,7 @@ const handlebars = require('express-handlebars').create({});
 
 app.engine('handlebars', handlebars.engine); 
 app.set('view engine', 'handlebars');
-
+require('dotenv').config();
 app.use(morgan('dev'));
 //Functions to create SQL queries
 
@@ -28,8 +28,8 @@ function generateRandomString(length) {
 //Create port for spotify access
 var scopes = ['user-read-private', 'user-read-email'],
   redirectUri = 'http://localhost:1989/auth',
-  clientId = 'e3d6ae52792d4f6bb286ef14c6ee270c',
-  clientSecret = '6214d65c3e454af6aa92c0ab49d14915'
+  clientId = process.env.SPOTIFY_CLIENT_ID,
+  clientSecret = process.env.SPOTIFY_CLIENT_SECRET,
   state = generateRandomString(16);
 
 var spotifyApi = new SpotifyWebApi({
@@ -236,11 +236,11 @@ app.post('/ranking', async (req, res) => {
     await db.insertUserRanking(userId, newSong.Id);
     //let url = await spotifyApi.getTrack(newSong.Spotify_Id)
     let data = {
-      AlbumCover: (req.body.AlbumCover), // Parse the album cover JSON string
+      AlbumCover: (req.body.AlbumCover),
       AlbumDatabaseId: req.query.albumId,
       Tracknum: parseInt(req.query.prev_tracknum) + 1,
       Url: newSong.Url,
-      Title: newSong.Title // Correctly fetch the new song title
+      Title: newSong.Title
     };
     res.render("ranking", data);
   }
@@ -263,7 +263,6 @@ async function getStats(userId) {
       let albumAverage = 0;
       let allSongs = await db.getAllSongs(album.Id);
       let isAlbum = await db.isAlbumRanking(userId,album.Id);
-      console.log(`Information for album: ${album.Title} is fully ranked: ${isAlbum.FullyRanked}`);
       if(isAlbum.FullyRanked==1){
         for (const song of allSongs) {
           let ranking = await db.getRanking(userId, song.Id);
@@ -308,6 +307,9 @@ async function getStats(userId) {
     if(albumArray.length!=0){
     albumArray.sort((a,b)=> b.AlbumAverage-a.AlbumAverage)
     artistSongs.sort((a,b)=>b.Ranking-a.Ranking);
+    while(artistSongs.length>25){
+      artistSongs.pop();
+    }
     artistArray.push({
       ArtistSpotifyId: artist.Spotify_Id,
       ArtistName: artist.Name,
@@ -320,6 +322,9 @@ async function getStats(userId) {
   artistArray.sort((a,b)=> b.ArtistAverage-a.ArtistAverage);
   allSongInfo.sort((a,b)=>b.Ranking-a.Ranking);
   allAlbumInfo.sort((a,b)=>b.AlbumAverage-a.AlbumAverage);
+  while(allSongInfo.length>25){
+    allSongInfo.pop();
+  }
   return {
     ArtistInfo: artistArray,
     AlbumInfo: allAlbumInfo,
@@ -356,7 +361,11 @@ app.get('/specificStats', async(req,res)=>{
     })
   }
 })
+//--
 
+app.get('/recommendations', async(req,res)=>{
+
+})
 app.get('/clear',async(req,res)=>{
 if(spotifyApi.getAccessToken()){
   await db.debugClearDatabase();
