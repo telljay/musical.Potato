@@ -8,6 +8,7 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const DBAbstraction = require("./DBAbstraction");
 const db = new DBAbstraction(path.join(__dirname,'data',"musicalPotato.sqlite"));
 const handlebars = require('express-handlebars').create({}); 
+//--
 
 app.engine('handlebars', handlebars.engine); 
 app.set('view engine', 'handlebars');
@@ -25,20 +26,20 @@ function generateRandomString(length) {
     }
     return result;
 }
-//Create port for spotify access
+
+//Create port for spotify access with protected information
 var scopes = ['user-read-private', 'user-read-email'],
   redirectUri = 'http://localhost:1989/auth',
   clientId = process.env.SPOTIFY_CLIENT_ID,
   clientSecret = process.env.SPOTIFY_CLIENT_SECRET,
   state = generateRandomString(16);
 
+//-- create the API link
 var spotifyApi = new SpotifyWebApi({
     redirectUri: redirectUri,
     clientId: clientId,
     clientSecret: clientSecret
 });
-//--
-var authorizeURL = spotifyApi.createAuthorizeURL(scopes,state);
 
 //Middleware
 app.use(bodyParser.json())
@@ -57,12 +58,16 @@ db.init()
         console.log(err); 
     });
 //Serve the homepage with authorizeURL if the database sets up
+
+//quick access function to the user's database ID
 async function getUserId() {
   let userId=await spotifyApi.getMe();
   return userId = await db.getUserDbIdFromUserId(userId.body.id);
 }
+//--
+
 app.get('/', (req, res) => {
-  res.render('home', {URL: authorizeURL})
+  res.render('home', {URL: spotifyApi.createAuthorizeURL(scopes,state)})
 });
 //--
 
@@ -79,7 +84,7 @@ app.get('/auth', async (req, res) => {
         res.redirect('/stats')
     },
     function(err) {
-        console.log('Something went wrong!', err);
+        console.log(`Error authroizing the user: ${err.message}`);
         res.redirect(`/err`)
     }
   );
@@ -160,7 +165,7 @@ app.get("/albums", async (req, res) => {
       const artistID = artistId;
       const albums = await GetAlbums(req.query.id,artistID);
       albums.reverse();
-      res.render('albums', {albums}); // Should log the correct artist ID
+      res.render('albums', {albums});
     })
     .catch((err) => {
       console.error(`Error: ${err.message}`);

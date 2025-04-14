@@ -63,11 +63,6 @@ This application allows users to log into their Spotify account, search for arti
 - **Flow**:
   - Displays the album cover, song name, run time, and other relevant information about the song.
 
-### Song Playback
-- **Description**: Allows users to play a song to aid in ranking.
-- **Flow**:
-  - A play button below the song allows users to listen to either a full track or a 30-second clip, depending on their Spotify membership.
-
 ### Song Ranking Slider
 - **Description**: A slider for ranking a song from 1 to 10.
 - **Flow**:
